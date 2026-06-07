@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:intl/intl.dart';
 import 'package:quran_student_tracker/models/student.dart';
 import 'package:quran_student_tracker/providers/student_provider.dart';
 import 'package:quran_student_tracker/l10n/app_localizations.dart';
@@ -20,6 +21,9 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
   late TextEditingController _riwayaController;
   late TextEditingController _suraController;
   late TextEditingController _ayahController;
+  late DateTime _selectedDateTime;
+  late TextEditingController _dateController;
+  late TextEditingController _timeController;
 
   bool get isEditing => widget.student != null;
 
@@ -31,6 +35,15 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
         TextEditingController(text: widget.student?.riwaya ?? 'حفص عن عاصم');
     _suraController = TextEditingController(text: widget.student?.sura ?? '');
     _ayahController = TextEditingController(text: widget.student?.ayah ?? '');
+    
+    // Initialize with existing timestamp or current time
+    _selectedDateTime = widget.student?.timestamp ?? DateTime.now();
+    
+    // Format controllers for display
+    final dateFormat = DateFormat('yyyy/MM/dd');
+    final timeFormat = DateFormat('hh:mm a');
+    _dateController = TextEditingController(text: dateFormat.format(_selectedDateTime));
+    _timeController = TextEditingController(text: timeFormat.format(_selectedDateTime));
   }
 
   @override
@@ -39,20 +52,74 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     _riwayaController.dispose();
     _suraController.dispose();
     _ayahController.dispose();
+    _dateController.dispose();
+    _timeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDateTime,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+      helpText: 'اختر تاريخ التسميع',
+      cancelText: 'إلغاء',
+      confirmText: 'تم',
+      fieldLabelText: 'التاريخ',
+    );
+    if (picked != null && picked != _selectedDateTime) {
+      setState(() {
+        _selectedDateTime = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+          _selectedDateTime.hour,
+          _selectedDateTime.minute,
+        );
+        final dateFormat = DateFormat('yyyy/MM/dd');
+        _dateController.text = dateFormat.format(_selectedDateTime);
+      });
+    }
+  }
+
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_selectedDateTime),
+      helpText: 'اختر وقت التسميع',
+      cancelText: 'إلغاء',
+      confirmText: 'تم',
+      hourLabelText: 'الساعة',
+      minuteLabelText: 'الدقيقة',
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDateTime = DateTime(
+          _selectedDateTime.year,
+          _selectedDateTime.month,
+          _selectedDateTime.day,
+          picked.hour,
+          picked.minute,
+        );
+        final timeFormat = DateFormat('hh:mm a');
+        _timeController.text = timeFormat.format(_selectedDateTime);
+      });
+    }
   }
 
   Future<void> _saveForm() async {
     if (_formKey.currentState!.validate()) {
       final provider = context.read<StudentProvider>();
       final local = AppLocalizations.of(context);
+      
       final student = Student(
         id: widget.student?.id ?? const Uuid().v4(),
         name: _nameController.text.trim(),
         riwaya: _riwayaController.text.trim(),
         sura: _suraController.text.trim(),
         ayah: _ayahController.text.trim(),
-        timestamp: widget.student?.timestamp ?? DateTime.now(),
+        timestamp: _selectedDateTime,
       );
 
       if (isEditing) {
@@ -129,6 +196,56 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+              // Date and Time Pickers
+              Text(
+                'وقت التسميع',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildDateTimeField(
+                      controller: _dateController,
+                      label: 'التاريخ',
+                      icon: Icons.calendar_today,
+                      onTap: () => _selectDate(context),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildDateTimeField(
+                      controller: _timeController,
+                      label: 'الوقت',
+                      icon: Icons.access_time,
+                      onTap: () => _selectTime(context),
+                    ),
+                  ),
+                ],
+              ),
+              // Show "Now" button to set current time
+              if (isEditing)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _selectedDateTime = DateTime.now();
+                        final dateFormat = DateFormat('yyyy/MM/dd');
+                        final timeFormat = DateFormat('hh:mm a');
+                        _dateController.text = dateFormat.format(_selectedDateTime);
+                        _timeController.text = timeFormat.format(_selectedDateTime);
+                      });
+                    },
+                    icon: const Icon(Icons.update, size: 18),
+                    label: const Text('تحديث إلى الوقت الحالي'),
+                  ),
+                ),
               const SizedBox(height: 32),
               ElevatedButton.icon(
                 onPressed: _saveForm,
@@ -160,6 +277,26 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
       ),
       validator: validator,
       textInputAction: TextInputAction.next,
+    );
+  }
+
+  Widget _buildDateTimeField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return TextFormField(
+      controller: controller,
+      readOnly: true,
+      onTap: onTap,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        suffixIcon: const Icon(Icons.arrow_drop_down),
+      ),
+      validator: (value) =>
+          value?.isEmpty ?? true ? 'مطلوب' : null,
     );
   }
 }

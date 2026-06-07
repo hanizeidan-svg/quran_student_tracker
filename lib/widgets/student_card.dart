@@ -15,7 +15,25 @@ class StudentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final local = AppLocalizations.of(context);
-    final dateFormat = DateFormat('yyyy/MM/dd - hh:mm a', 'ar');
+    final dateFormat = DateFormat('yyyy/MM/dd', 'ar');
+    final timeFormat = DateFormat('hh:mm a', 'ar');
+    final now = DateTime.now();
+    final difference = now.difference(student.timestamp);
+    
+    // Create relative time string
+    String relativeTime;
+    if (difference.inMinutes < 1) {
+      relativeTime = 'الآن';
+    } else if (difference.inHours < 1) {
+      relativeTime = 'منذ ${difference.inMinutes} دقيقة';
+    } else if (difference.inDays < 1) {
+      relativeTime = 'منذ ${difference.inHours} ساعة';
+    } else if (difference.inDays < 30) {
+      relativeTime = 'منذ ${difference.inDays} يوم';
+    } else {
+      relativeTime = dateFormat.format(student.timestamp);
+    }
+    
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -40,12 +58,24 @@ class StudentCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      student.name,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          student.name,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '$relativeTime (${dateFormat.format(student.timestamp)} ${timeFormat.format(student.timestamp)})',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   PopupMenuButton<String>(
