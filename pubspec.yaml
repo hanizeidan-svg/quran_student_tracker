@@ -18,7 +18,10 @@ dependencies:
   intl_phone_number_input: ^0.7.4 # Not strictly needed, but good to have if you expand. We'll keep it light.
   provider: ^6.1.1
   uuid: ^4.2.1
-  share_plus: ^7.2.1
+  file_picker: ^8.0.0 
+  share_plus: ^9.0.0
+  path_provider: ^2.1.2
+  permission_handler: ^11.3.0
 
 dev_dependencies:
   flutter_test:

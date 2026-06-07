@@ -24,5 +24,9 @@
   "required_field": "هذا الحقل مطلوب",
   "add_recitation": "إضافة تسميع",
   "edit_recitation": "تعديل التسميع",
-  "search": "بحث..."
+  "search": "بحث...",
+  "export": "تصدير البيانات",
+  "import": "استيراد البيانات",
+  "export_success": "تم تصدير البيانات بنجاح",
+  "import_success": "تم استيراد البيانات بنجاح"
 }
