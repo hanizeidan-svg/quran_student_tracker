@@ -1,0 +1,32 @@
+name: quran_student_tracker
+description: A modern app to track Quran recitation progress for students.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.1.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+  sqflite: ^2.3.0
+  path: ^1.8.3
+  google_fonts: ^6.1.0
+  intl_phone_number_input: ^0.7.4 # Not strictly needed, but good to have if you expand. We'll keep it light.
+  provider: ^6.1.1
+  uuid: ^4.2.1
+  share_plus: ^7.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+  generate: true
+  assets:
+    - assets/lang/ar.json
