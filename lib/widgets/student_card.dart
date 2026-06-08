@@ -6,6 +6,7 @@ import 'package:quran_student_tracker/models/student.dart';
 import 'package:quran_student_tracker/providers/student_provider.dart';
 import 'package:quran_student_tracker/screens/student_form_screen.dart';
 import 'package:quran_student_tracker/l10n/app_localizations.dart';
+import 'package:quran_student_tracker/widgets/assign_group_dialog.dart';
 
 class StudentCard extends StatelessWidget {
   final Student student;
@@ -91,6 +92,15 @@ class StudentCard extends StatelessWidget {
                       } else if (value == 'delete') {
                         _showDeleteDialog(context);
                       }
+                      else if (value == 'assign_group') {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AssignGroupDialog(
+                            studentId: student.id,
+                            currentGroupId: student.groupId,
+                          ),
+                        );
+                      }
                     },
                     itemBuilder: (context) => [
                       PopupMenuItem(
@@ -110,6 +120,16 @@ class StudentCard extends StatelessWidget {
                             const Icon(Icons.delete, color: Colors.red),
                             const SizedBox(width: 8),
                             Text(local.translate('delete')),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'assign_group',
+                        child: Row(
+                          children: [
+                            Icon(Icons.group_add, color: Colors.purple.shade400),
+                            const SizedBox(width: 8),
+                            const Text('تحديد المجموعة'),
                           ],
                         ),
                       ),

@@ -6,6 +6,7 @@ class Student {
   final String sura;
   final String ayah;
   final DateTime timestamp;
+  final String? groupId;
 
   Student({
     required this.id,
@@ -14,6 +15,7 @@ class Student {
     required this.sura,
     required this.ayah,
     required this.timestamp,
+    this.groupId,
   });
 
   Map<String, dynamic> toMap() {
@@ -24,6 +26,7 @@ class Student {
       'sura': sura,
       'ayah': ayah,
       'timestamp': timestamp.toIso8601String(),
+      'groupId': groupId,
     };
   }
 
@@ -35,6 +38,7 @@ class Student {
       sura: map['sura'],
       ayah: map['ayah'],
       timestamp: DateTime.parse(map['timestamp']),
+      groupId: map['groupId'],
     );
   }
 }
