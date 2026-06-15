@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:quran_student_tracker/models/student.dart';
 import 'package:quran_student_tracker/providers/student_provider.dart';
 import 'package:quran_student_tracker/l10n/app_localizations.dart';
+import 'package:quran_student_tracker/widgets/assign_group_dialog.dart';
 
 class StudentFormScreen extends StatefulWidget {
   final Student? student;
@@ -24,6 +25,8 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
   late DateTime _selectedDateTime;
   late TextEditingController _dateController;
   late TextEditingController _timeController;
+  String? _selectedGroupId;
+  String? _selectedGroupName;
 
   bool get isEditing => widget.student != null;
 
@@ -36,6 +39,9 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     _suraController = TextEditingController(text: widget.student?.sura ?? '');
     _ayahController = TextEditingController(text: widget.student?.ayah ?? '');
     
+    // Preserve the groupId from the existing student
+    _selectedGroupId = widget.student?.groupId;
+    
     // Initialize with existing timestamp or current time
     _selectedDateTime = widget.student?.timestamp ?? DateTime.now();
     
@@ -44,6 +50,26 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     final timeFormat = DateFormat('hh:mm a');
     _dateController = TextEditingController(text: dateFormat.format(_selectedDateTime));
     _timeController = TextEditingController(text: timeFormat.format(_selectedDateTime));
+    
+    // Get group name if student has a group
+    if (_selectedGroupId != null) {
+      _loadGroupName();
+    }
+  }
+
+  Future<void> _loadGroupName() async {
+    // We'll get the group name from the provider after build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _selectedGroupId != null) {
+        final provider = context.read<StudentProvider>();
+        final group = provider.groups.where((g) => g.id == _selectedGroupId).firstOrNull;
+        if (group != null) {
+          setState(() {
+            _selectedGroupName = group.name;
+          });
+        }
+      }
+    });
   }
 
   @override
@@ -108,6 +134,40 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     }
   }
 
+  Future<void> _showGroupSelection() async {
+    final result = await showDialog<String?>(
+      context: context,
+      builder: (ctx) => AssignGroupDialog(
+        studentId: widget.student?.id ?? '',
+        currentGroupId: _selectedGroupId,
+      ),
+    );
+    
+    if (result != null || result == null) {
+      // Refresh the group ID after dialog closes
+      if (mounted) {
+        final provider = context.read<StudentProvider>();
+        // If editing, get the latest groupId from provider
+        if (isEditing && widget.student != null) {
+          final updatedStudent = provider.students
+              .where((s) => s.id == widget.student!.id)
+              .firstOrNull;
+          setState(() {
+            _selectedGroupId = updatedStudent?.groupId;
+            if (_selectedGroupId != null) {
+              final group = provider.groups
+                  .where((g) => g.id == _selectedGroupId)
+                  .firstOrNull;
+              _selectedGroupName = group?.name;
+            } else {
+              _selectedGroupName = null;
+            }
+          });
+        }
+      }
+    }
+  }
+
   Future<void> _saveForm() async {
     if (_formKey.currentState!.validate()) {
       final provider = context.read<StudentProvider>();
@@ -120,6 +180,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
         sura: _suraController.text.trim(),
         ayah: _ayahController.text.trim(),
         timestamp: _selectedDateTime,
+        groupId: _selectedGroupId, // Preserve the group ID
       );
 
       if (isEditing) {
@@ -144,6 +205,18 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
   @override
   Widget build(BuildContext context) {
     final local = AppLocalizations.of(context);
+    final provider = context.read<StudentProvider>();
+    
+    // Get group name for display
+    if (_selectedGroupId != null && _selectedGroupName == null) {
+      final group = provider.groups
+          .where((g) => g.id == _selectedGroupId)
+          .firstOrNull;
+      if (group != null) {
+        _selectedGroupName = group.name;
+      }
+    }
+    
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -246,6 +319,58 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                     label: const Text('تحديث إلى الوقت الحالي'),
                   ),
                 ),
+              const SizedBox(height: 16),
+              // Group selection
+              Text(
+                'المجموعة',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: _showGroupSelection,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.grey.shade50,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.group_work,
+                        color: _selectedGroupId != null 
+                            ? (provider.groups
+                                .where((g) => g.id == _selectedGroupId)
+                                .firstOrNull
+                                ?.colorValue ?? Colors.grey)
+                            : Colors.grey,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _selectedGroupName ?? 'بدون مجموعة',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: _selectedGroupId != null 
+                                ? Colors.black87 
+                                : Colors.grey.shade600,
+                            fontWeight: _selectedGroupId != null 
+                                ? FontWeight.w500 
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                    ],
+                  ),
+                ),
+              ),
               const SizedBox(height: 32),
               ElevatedButton.icon(
                 onPressed: _saveForm,

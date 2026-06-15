@@ -67,7 +67,7 @@ class _AssignGroupDialogState extends State<AssignGroupDialog> {
                   widget.studentId,
                   _selectedGroupId,
                 );
-                Navigator.pop(context);
+                Navigator.pop(context, _selectedGroupId);
               },
               child: const Text('حفظ'),
             ),
